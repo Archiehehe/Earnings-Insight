@@ -1,73 +1,55 @@
-# Welcome to your Lovable project
+# Earnings Insight
 
-## Project info
+Upload your portfolio → get a personalized upcoming earnings calendar + historical reactions + deep AI transcript breakdowns.  
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Built for retail investors and traders who want context before earnings hits — without drowning in noise or pretending to predict the move.
 
-## How can I edit this code?
+Live: https://earningsinsight.vercel.app/ (beta — still wiring real data)
 
-There are several ways of editing your application.
+> This is a sensemaking tool — not a trading signal engine and definitely not financial advice.
 
-**Use Lovable**
+## Core Philosophy
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Earnings are high-signal events, but most tools just show dates + estimates.  
+Earnings Insight goes deeper:  
+- Shows **your** portfolio's upcoming events (no dummy data clutter).  
+- Gives historical context (avg moves, surprise %, beat rates).  
+- Runs structured AI analysis on transcripts (4 pillars: Delta, State of Play, Signaling, Q&A Truth) to compress what management is really saying.  
 
-Changes made via Lovable will be committed automatically to this repo.
+Clarity over certainty. Exploration over signals.
 
-**Use your preferred IDE**
+## Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- 📁 Portfolio upload (CSV or XLSX) — client-side, private, no storage  
+- 📅 Personalized upcoming earnings calendar (only your tickers, BMO/AMC timing)  
+- 📊 Historical reactions (last few quarters: EPS surprise, 1D/1W moves, charts)  
+- 🧠 Auto-loaded 4-pillar AI transcript analysis 
+  - Delta: What changed vs last quarter?  
+  - State of Play: Where is the business now?  
+  - Signaling: What does management want you to believe?  
+  - Q&A Truth: Where are they evading or hedging?    
+  
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## How It Works
 
-Follow these steps:
+1. Land on clean explanation + big upload zone.  
+2. Drag/drop your portfolio file → parses tickers client-side.  
+3. Matches to upcoming earnings → shows calendar + details for your holdings.  
+4. Select a ticker/event → auto-pulls transcript + runs 4-pillar analysis.  
+5. Everything cached where possible for speed.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Tech Stack
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Vite + React + TypeScript + Tailwind + shadcn/ui  
+- Supabase for caching/analysis persistence  
+- FMP API for earnings dates/estimates/transcripts (add your key in env)  
+- Deployed on Vercel  
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Quick Start (Local)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+If you want to run locally:  
+```bash
+git clone https://github.com/Archiehehe/Earnings-Insight.git
+cd Earnings-Insight
+npm install
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
