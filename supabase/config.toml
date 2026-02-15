@@ -1,0 +1,4 @@
+project_id = "hiduolfksssqbzkvmkih"
+
+[functions.analyze-earnings]
+verify_jwt = false
