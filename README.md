@@ -1,4 +1,4 @@
-# Earnings Insight
+# Earnings Intel
 
 Upload your portfolio → get a personalized upcoming earnings calendar + historical reactions + deep AI transcript breakdowns.  
 
