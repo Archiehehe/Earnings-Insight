@@ -1,20 +1,21 @@
 import { useState, useRef } from "react";
 import { Upload, X, FileSpreadsheet } from "lucide-react";
 import { sp500Stocks, Stock } from "@/data/sp500";
+import * as XLSX from "xlsx";
 
 interface PortfolioUploadProps {
   onPortfolioLoaded: (stocks: Stock[]) => void;
+  compact?: boolean;
 }
 
-const PortfolioUpload = ({ onPortfolioLoaded }: PortfolioUploadProps) => {
+const PortfolioUpload = ({ onPortfolioLoaded, compact }: PortfolioUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [loaded, setLoaded] = useState<string[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const parseCSV = (text: string) => {
+  const extractTickers = (text: string): string[] => {
     const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
     const tickers: string[] = [];
-
     for (const line of lines) {
       const parts = line.split(",").map((p) => p.trim().replace(/"/g, "").toUpperCase());
       for (const part of parts) {
@@ -24,7 +25,10 @@ const PortfolioUpload = ({ onPortfolioLoaded }: PortfolioUploadProps) => {
         }
       }
     }
+    return tickers;
+  };
 
+  const processTickers = (tickers: string[]) => {
     const unique = [...new Set(tickers)];
     const matched = sp500Stocks.filter((s) => unique.includes(s.ticker));
     setLoaded(unique);
@@ -34,12 +38,26 @@ const PortfolioUpload = ({ onPortfolioLoaded }: PortfolioUploadProps) => {
   };
 
   const handleFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (text) parseCSV(text);
-    };
-    reader.readAsText(file);
+    const ext = file.name.split(".").pop()?.toLowerCase();
+
+    if (ext === "xlsx" || ext === "xls") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const csv = XLSX.utils.sheet_to_csv(sheet);
+        processTickers(extractTickers(csv));
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        if (text) processTickers(extractTickers(text));
+      };
+      reader.readAsText(file);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -80,24 +98,39 @@ const PortfolioUpload = ({ onPortfolioLoaded }: PortfolioUploadProps) => {
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
       onClick={() => fileRef.current?.click()}
-      className={`rounded-md border-2 border-dashed p-4 cursor-pointer transition-colors text-center ${
-        isDragging ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
+      className={`rounded-lg border-2 border-dashed cursor-pointer transition-all text-center ${
+        compact ? "p-4" : "p-8"
+      } ${
+        isDragging
+          ? "border-primary bg-primary/5"
+          : "border-border hover:border-muted-foreground"
       }`}
     >
       <input
         ref={fileRef}
         type="file"
-        accept=".csv,.txt"
+        accept=".csv,.txt,.xlsx,.xls"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) handleFile(file);
         }}
       />
-      <Upload className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
-      <p className="text-xs text-muted-foreground">
-        Drop CSV portfolio or click to upload
-      </p>
+      <Upload className={`mx-auto mb-3 text-muted-foreground ${compact ? "h-5 w-5" : "h-8 w-8"}`} />
+      {compact ? (
+        <p className="text-xs text-muted-foreground">
+          Drop CSV/XLSX or click
+        </p>
+      ) : (
+        <>
+          <p className="text-sm text-foreground font-medium mb-1">
+            Drop your portfolio file here
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Supports CSV, TXT, and XLSX — parsed client-side, nothing leaves your browser
+          </p>
+        </>
+      )}
     </div>
   );
 };

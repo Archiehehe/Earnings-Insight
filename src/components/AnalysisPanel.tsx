@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertTriangle, TrendingUp, Eye, Signal, MessageSquare } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, AlertTriangle, TrendingUp, Signal, MessageSquare } from "lucide-react";
 
 interface AnalysisPanelProps {
   ticker: string;
@@ -28,6 +27,15 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
   const [activePillar, setActivePillar] = useState(0);
   const [streamedText, setStreamedText] = useState("");
 
+  // Auto-run analysis when ticker/quarter changes
+  useEffect(() => {
+    setAnalysis(null);
+    setError(null);
+    setStreamedText("");
+    setActivePillar(0);
+    runAnalysis();
+  }, [ticker, quarter]);
+
   const runAnalysis = async () => {
     setLoading(true);
     setError(null);
@@ -45,20 +53,10 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
         body: JSON.stringify({ ticker, quarter }),
       });
 
-      if (resp.status === 429) {
-        setError("Rate limit exceeded. Please try again in a moment.");
-        return;
-      }
-      if (resp.status === 402) {
-        setError("AI usage limit reached. Please add credits.");
-        return;
-      }
-      if (!resp.ok) {
-        setError("Failed to analyze. Please try again.");
-        return;
-      }
+      if (resp.status === 429) { setError("Rate limit exceeded. Please try again in a moment."); return; }
+      if (resp.status === 402) { setError("AI usage limit reached. Please add credits."); return; }
+      if (!resp.ok) { setError("Failed to analyze. Please try again."); return; }
 
-      // Stream response
       const reader = resp.body?.getReader();
       if (!reader) throw new Error("No response body");
 
@@ -84,18 +82,14 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
               fullText += content;
               setStreamedText(fullText);
             }
-          } catch {
-            // partial JSON, skip
-          }
+          } catch { /* partial JSON */ }
         }
       }
 
-      // Parse the completed analysis
       try {
         const parsed = JSON.parse(fullText);
         setAnalysis(parsed);
       } catch {
-        // Try to extract sections from markdown-like text
         setAnalysis({
           delta: extractSection(fullText, "Delta", "State"),
           stateOfPlay: extractSection(fullText, "State of Play", "Signal"),
@@ -116,28 +110,9 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
     const endIdx = end === "---END---" ? text.length : text.toLowerCase().indexOf(end.toLowerCase());
     if (startIdx === -1) return text.substring(0, 500);
     const section = text.substring(startIdx, endIdx === -1 ? undefined : endIdx);
-    // Remove the header line
     const lines = section.split("\n");
     return lines.slice(1).join("\n").trim() || section;
   };
-
-  if (!analysis && !loading && !error && !streamedText) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Eye className="h-12 w-12 text-terminal-dim mb-4" />
-        <h3 className="text-sm font-semibold text-foreground mb-2">AI Earnings Analysis</h3>
-        <p className="text-xs text-muted-foreground max-w-xs mb-6">
-          Get institutional-grade analysis of {ticker}'s {quarter} earnings call using the 4-Pillar framework.
-        </p>
-        <button
-          onClick={runAnalysis}
-          className="px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-semibold text-sm hover:brightness-110 transition-all"
-        >
-          Analyze {ticker}
-        </button>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -158,7 +133,7 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="flex flex-col items-center justify-center py-8 text-center">
         <AlertTriangle className="h-8 w-8 text-terminal-amber mb-3" />
         <p className="text-sm text-foreground mb-2">Analysis Error</p>
         <p className="text-xs text-muted-foreground mb-4">{error}</p>
@@ -178,7 +153,11 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
   const Icon = currentPillar.icon;
 
   return (
-    <div className="space-y-4 animate-slide-up">
+    <div className="space-y-5 animate-slide-up">
+      <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+        AI Transcript Analysis — 4-Pillar Framework
+      </h3>
+
       {/* Pillar Tabs */}
       <div className="flex gap-1 bg-secondary rounded-md p-1">
         {pillars.map((p, i) => {
@@ -187,22 +166,22 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
             <button
               key={p.key}
               onClick={() => setActivePillar(i)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded text-xs font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded text-xs font-medium transition-all ${
                 i === activePillar
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <PIcon className={`h-3.5 w-3.5 ${i === activePillar ? p.color : ""}`} />
-              <span className="hidden sm:inline">{p.label}</span>
+              {p.label}
             </button>
           );
         })}
       </div>
 
       {/* Pillar Content */}
-      <div className="bg-secondary rounded-md p-5">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="bg-secondary rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
           <Icon className={`h-5 w-5 ${currentPillar.color}`} />
           <div>
             <h3 className="text-sm font-semibold text-foreground">{currentPillar.label}</h3>
