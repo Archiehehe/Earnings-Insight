@@ -4,7 +4,7 @@ Upload your portfolio → get a personalized upcoming earnings calendar + histor
 
 Built for retail investors and traders who want context before earnings hits — without drowning in noise or pretending to predict the move.
 
-Live: https://earningsinsight.vercel.app/ (beta — still wiring real data)
+Live: https://earningsintel.vercel.app/
 
 > This is a sensemaking tool — not a trading signal engine and definitely not financial advice.
 
