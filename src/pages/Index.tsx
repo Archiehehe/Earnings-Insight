@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import CommandBar from "@/components/CommandBar";
 import EarningsCalendar from "@/components/EarningsCalendar";
 import EarningsDetail from "@/components/EarningsDetail";
@@ -6,17 +6,21 @@ import AnalysisPanel from "@/components/AnalysisPanel";
 import PortfolioUpload from "@/components/PortfolioUpload";
 import StatusBar from "@/components/StatusBar";
 import LandingHero from "@/components/LandingHero";
-import { EarningsEvent, mockEarnings } from "@/data/mockEarnings";
+import { EarningsEvent } from "@/data/mockEarnings";
 import { Stock } from "@/data/sp500";
-import { Activity } from "lucide-react";
+import { useEarningsData } from "@/hooks/useEarningsData";
+import { Activity, Loader2 } from "lucide-react";
 
 const Index = () => {
   const [selectedEvent, setSelectedEvent] = useState<EarningsEvent | null>(null);
   const [portfolioStocks, setPortfolioStocks] = useState<Stock[]>([]);
   const [hasUploaded, setHasUploaded] = useState(false);
 
+  const tickers = useMemo(() => portfolioStocks.map((s) => s.ticker), [portfolioStocks]);
+  const { events, loading, error } = useEarningsData(tickers);
+
   const handleSelectStock = (stock: Stock) => {
-    const event = mockEarnings.find((e) => e.ticker === stock.ticker);
+    const event = events.find((e) => e.ticker === stock.ticker);
     if (event) {
       setSelectedEvent(event);
     }
@@ -80,10 +84,20 @@ const Index = () => {
             onPortfolioLoaded={handlePortfolioLoaded}
             compact
           />
-          <EarningsCalendar
-            onSelectEvent={handleSelectEvent}
-            selectedTicker={selectedEvent?.ticker}
-          />
+          {loading ? (
+            <div className="flex items-center gap-2 py-8 justify-center">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-xs text-muted-foreground">Loading earnings…</span>
+            </div>
+          ) : error ? (
+            <div className="text-xs text-destructive text-center py-4">{error}</div>
+          ) : (
+            <EarningsCalendar
+              events={events}
+              onSelectEvent={handleSelectEvent}
+              selectedTicker={selectedEvent?.ticker}
+            />
+          )}
           {portfolioStocks.length > 0 && (
             <div className="border-t border-border pt-5">
               <h3 className="text-xs uppercase tracking-wider text-terminal-cyan mb-3 font-semibold">
