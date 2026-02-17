@@ -13,66 +13,75 @@ serve(async (req) => {
 
   try {
     const { tickers } = await req.json();
-    const FMP_API_KEY = Deno.env.get("FMP_API_KEY");
+    const FINNHUB_KEY = Deno.env.get("FINNHUB_API_KEY");
 
-    if (!FMP_API_KEY) {
-      throw new Error("FMP_API_KEY is not configured");
+    if (!FINNHUB_KEY) {
+      throw new Error("FINNHUB_API_KEY is not configured");
     }
 
     if (!tickers || !Array.isArray(tickers) || tickers.length === 0) {
       throw new Error("tickers array is required");
     }
 
-    // Fetch earnings calendar from FMP
-    const calendarUrl = `https://financialmodelingprep.com/api/v3/earning_calendar?apikey=${FMP_API_KEY}`;
-    const calendarResp = await fetch(calendarUrl);
-    
-    if (!calendarResp.ok) {
-      console.error("FMP calendar error:", calendarResp.status);
+    const tickerList = tickers.map((t: string) => t.toUpperCase()).slice(0, 30);
+
+    // 1. Fetch upcoming earnings calendar (next 30 days)
+    const today = new Date();
+    const future = new Date(today);
+    future.setDate(future.getDate() + 30);
+    const fromDate = today.toISOString().split("T")[0];
+    const toDate = future.toISOString().split("T")[0];
+
+    const calUrl = `https://finnhub.io/api/v1/calendar/earnings?from=${fromDate}&to=${toDate}&token=${FINNHUB_KEY}`;
+    const calResp = await fetch(calUrl);
+    if (!calResp.ok) {
+      console.error("Finnhub calendar error:", calResp.status, await calResp.text());
       throw new Error("Failed to fetch earnings calendar");
     }
-
-    const allEarnings = await calendarResp.json();
+    const calData = await calResp.json();
+    const allCalendar = calData.earningsCalendar || [];
 
     // Filter to requested tickers
-    const tickerSet = new Set(tickers.map((t: string) => t.toUpperCase()));
-    const filtered = allEarnings.filter((e: any) => tickerSet.has(e.symbol?.toUpperCase()));
+    const tickerSet = new Set(tickerList);
+    const matchedCalendar = allCalendar.filter((e: any) => tickerSet.has(e.symbol?.toUpperCase()));
 
-    // For each matched ticker, also fetch historical earnings (last 4 quarters)
-    const uniqueTickers = [...new Set(filtered.map((e: any) => e.symbol))] as string[];
-    
-    const historicalPromises = uniqueTickers.slice(0, 20).map(async (ticker: string) => {
+    // 2. For each matched ticker, fetch historical earnings surprises
+    const uniqueTickers = [...new Set(matchedCalendar.map((e: any) => e.symbol))] as string[];
+
+    // Also include tickers that might not have upcoming earnings but user still wants data
+    for (const t of tickerList) {
+      if (!uniqueTickers.includes(t) && uniqueTickers.length < 30) {
+        uniqueTickers.push(t);
+      }
+    }
+
+    const histPromises = uniqueTickers.map(async (ticker: string) => {
       try {
-        const histUrl = `https://financialmodelingprep.com/api/v3/historical/earning_calendar/${ticker}?limit=4&apikey=${FMP_API_KEY}`;
-        const histResp = await fetch(histUrl);
-        if (!histResp.ok) return { ticker, history: [] };
-        const history = await histResp.json();
-        return { ticker, history };
+        const url = `https://finnhub.io/api/v1/stock/earnings?symbol=${ticker}&limit=4&token=${FINNHUB_KEY}`;
+        const resp = await fetch(url);
+        if (!resp.ok) return { ticker, history: [] };
+        const data = await resp.json();
+        return { ticker, history: Array.isArray(data) ? data : [] };
       } catch {
         return { ticker, history: [] };
       }
     });
 
-    const historicalResults = await Promise.all(historicalPromises);
+    const histResults = await Promise.all(histPromises);
     const historicalMap: Record<string, any[]> = {};
-    for (const { ticker, history } of historicalResults) {
+    for (const { ticker, history } of histResults) {
       historicalMap[ticker] = history;
     }
 
     return new Response(
-      JSON.stringify({ earnings: filtered, historical: historicalMap }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ calendar: matchedCalendar, historical: historicalMap }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("fetch-earnings error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
