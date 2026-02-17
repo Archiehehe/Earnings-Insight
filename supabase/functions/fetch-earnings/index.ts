@@ -23,13 +23,15 @@ serve(async (req) => {
       throw new Error("tickers array is required");
     }
 
-    const tickerList = tickers.map((t: string) => t.toUpperCase()).slice(0, 30);
+    const tickerList = tickers.map((t: string) => t.toUpperCase()).slice(0, 100);
 
-    // 1. Fetch upcoming earnings calendar (next 30 days)
+    // 1. Fetch earnings calendar (past 30 days + next 30 days)
     const today = new Date();
+    const past = new Date(today);
+    past.setDate(past.getDate() - 30);
     const future = new Date(today);
     future.setDate(future.getDate() + 30);
-    const fromDate = today.toISOString().split("T")[0];
+    const fromDate = past.toISOString().split("T")[0];
     const toDate = future.toISOString().split("T")[0];
 
     const calUrl = `https://finnhub.io/api/v1/calendar/earnings?from=${fromDate}&to=${toDate}&token=${FINNHUB_KEY}`;
@@ -50,7 +52,7 @@ serve(async (req) => {
 
     // Also include tickers that might not have upcoming earnings but user still wants data
     for (const t of tickerList) {
-      if (!uniqueTickers.includes(t) && uniqueTickers.length < 30) {
+      if (!uniqueTickers.includes(t) && uniqueTickers.length < 100) {
         uniqueTickers.push(t);
       }
     }
