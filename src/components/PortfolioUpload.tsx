@@ -14,17 +14,42 @@ const PortfolioUpload = ({ onPortfolioLoaded, compact }: PortfolioUploadProps) =
   const fileRef = useRef<HTMLInputElement>(null);
 
   const extractTickers = (text: string): string[] => {
+    const headerTokens = new Set([
+      "SYMBOL",
+      "TICKER",
+      "TICKERS",
+      "NAME",
+      "QUANTITY",
+      "QTY",
+      "COST",
+      "INVESTED",
+      "VALUE",
+      "PRICE",
+    ]);
+
     const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
     const tickers: string[] = [];
+
     for (const line of lines) {
-      const parts = line.split(",").map((p) => p.trim().replace(/"/g, "").toUpperCase());
-      for (const part of parts) {
-        const clean = part.replace("$", "");
-        if (clean.length >= 1 && clean.length <= 6 && /^[A-Z.]+$/.test(clean)) {
-          tickers.push(clean);
-        }
+      const parts = line
+        .split(",")
+        .map((p) => p.trim().replace(/"/g, "").toUpperCase())
+        .filter(Boolean);
+
+      if (parts.length === 0) continue;
+
+      const firstCol = parts[0]?.replace("$", "");
+      if (!firstCol || headerTokens.has(firstCol)) continue;
+
+      if (/^[A-Z.]{1,6}$/.test(firstCol)) {
+        tickers.push(firstCol);
+        continue;
       }
+
+      const fallback = parts.find((part) => /^[A-Z.]{1,6}$/.test(part) && !headerTokens.has(part));
+      if (fallback) tickers.push(fallback);
     }
+
     return tickers;
   };
 

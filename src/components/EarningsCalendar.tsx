@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { EarningsEvent } from "@/data/mockEarnings";
 import { Calendar, Clock, TrendingUp, TrendingDown, History } from "lucide-react";
 
@@ -8,6 +9,8 @@ interface EarningsCalendarProps {
 }
 
 const EarningsCalendar = ({ events, onSelectEvent, selectedTicker }: EarningsCalendarProps) => {
+  const [activeTab, setActiveTab] = useState<"upcoming" | "recent">("upcoming");
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -48,9 +51,10 @@ const EarningsCalendar = ({ events, onSelectEvent, selectedTicker }: EarningsCal
     return e.historicalReactions.reduce((s, r) => s + r.surprise, 0) / e.historicalReactions.length;
   };
 
-  const renderEventRow = (event: EarningsEvent) => {
+  const renderEventRow = (event: EarningsEvent, showSurprise: boolean) => {
     const avg = avgSurprise(event);
     const isSelected = selectedTicker === event.ticker;
+
     return (
       <button
         key={event.ticker}
@@ -71,7 +75,7 @@ const EarningsCalendar = ({ events, onSelectEvent, selectedTicker }: EarningsCal
           <Clock className="h-3 w-3" />
           {event.time}
         </span>
-        {event.historicalReactions.length > 0 && (
+        {showSurprise && event.historicalReactions.length > 0 && (
           <span
             className={`flex items-center gap-0.5 text-xs font-mono min-w-[48px] justify-end ${
               avg >= 0 ? "text-terminal-green" : "text-terminal-red"
@@ -90,7 +94,12 @@ const EarningsCalendar = ({ events, onSelectEvent, selectedTicker }: EarningsCal
     );
   };
 
-  const renderDateGroup = (date: string, groupedEvents: Record<string, EarningsEvent[]>, isPast?: boolean) => {
+  const renderDateGroup = (
+    date: string,
+    groupedEvents: Record<string, EarningsEvent[]>,
+    isPast?: boolean,
+    showSurprise?: boolean,
+  ) => {
     const { dayName, month, daysAway } = formatDate(date);
     return (
       <div key={date} className="mb-3">
@@ -107,40 +116,65 @@ const EarningsCalendar = ({ events, onSelectEvent, selectedTicker }: EarningsCal
               : `${daysAway}D`}
           </span>
         </div>
-        {groupedEvents[date].map(renderEventRow)}
+        {groupedEvents[date].map((event) => renderEventRow(event, !!showSurprise))}
       </div>
     );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Upcoming Earnings */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Upcoming Earnings
-          </h2>
-        </div>
-        {sortedUpcoming.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">
-            No upcoming earnings in the next 30 days.
-          </p>
-        ) : (
-          sortedUpcoming.map((date) => renderDateGroup(date, upcomingGrouped))
-        )}
+    <div className="space-y-4">
+      <div className="flex gap-1 bg-secondary rounded-md p-1">
+        <button
+          onClick={() => setActiveTab("upcoming")}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs rounded transition-colors ${
+            activeTab === "upcoming" ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Calendar className="h-3.5 w-3.5" />
+          Upcoming
+        </button>
+        <button
+          onClick={() => setActiveTab("recent")}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs rounded transition-colors ${
+            activeTab === "recent" ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <History className="h-3.5 w-3.5" />
+          Past 30D
+        </button>
       </div>
 
-      {/* Recent Past Earnings */}
-      {sortedRecent.length > 0 && (
+      {activeTab === "upcoming" ? (
         <div className="space-y-1">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">
+              Upcoming Earnings
+            </h2>
+          </div>
+          {sortedUpcoming.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              No upcoming earnings in the next 30 days.
+            </p>
+          ) : (
+            sortedUpcoming.map((date) => renderDateGroup(date, upcomingGrouped, false, false))
+          )}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-3">
             <History className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Recent Earnings (Past 30D)
             </h2>
           </div>
-          {sortedRecent.map((date) => renderDateGroup(date, recentGrouped, true))}
+          {sortedRecent.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              No earnings in the past 30 days.
+            </p>
+          ) : (
+            sortedRecent.map((date) => renderDateGroup(date, recentGrouped, true, true))
+          )}
         </div>
       )}
     </div>
@@ -148,3 +182,4 @@ const EarningsCalendar = ({ events, onSelectEvent, selectedTicker }: EarningsCal
 };
 
 export default EarningsCalendar;
+
