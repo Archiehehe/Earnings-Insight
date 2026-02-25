@@ -30,10 +30,15 @@ const PortfolioUpload = ({ onPortfolioLoaded, compact }: PortfolioUploadProps) =
 
   const processTickers = (tickers: string[]) => {
     const unique = [...new Set(tickers)];
-    const matched = sp500Stocks.filter((s) => unique.includes(s.ticker));
+    // Match against known stocks, and create entries for unknown tickers too
+    const stocks: Stock[] = unique.map((ticker) => {
+      const known = sp500Stocks.find((s) => s.ticker === ticker);
+      if (known) return known;
+      return { ticker, name: ticker, sector: "Other", industry: "Other", marketCap: "Mid" as const };
+    });
     setLoaded(unique);
-    if (matched.length > 0) {
-      onPortfolioLoaded(matched);
+    if (stocks.length > 0) {
+      onPortfolioLoaded(stocks);
     }
   };
 
