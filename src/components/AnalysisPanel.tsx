@@ -11,6 +11,7 @@ interface PillarData {
   stateOfPlay: string;
   signaling: string;
   qaTruth: string;
+  qaTranscript?: string;
 }
 
 const pillars = [
@@ -94,7 +95,8 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
           delta: extractSection(fullText, "Delta", "State"),
           stateOfPlay: extractSection(fullText, "State of Play", "Signal"),
           signaling: extractSection(fullText, "Signal", "Truth"),
-          qaTruth: extractSection(fullText, "Truth", "---END---"),
+          qaTruth: extractSection(fullText, "Truth", "Q&A Transcript"),
+          qaTranscript: extractSection(fullText, "Q&A Transcript", "---END---"),
         });
       }
     } catch (e) {
@@ -192,6 +194,16 @@ const AnalysisPanel = ({ ticker, quarter }: AnalysisPanelProps) => {
         </div>
         <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
           {analysis[currentPillar.key]}
+        </div>
+      </div>
+
+      {/* Q&A Transcript */}
+      <div className="bg-secondary rounded-lg p-6 border border-border">
+        <h4 className="text-xs uppercase tracking-wider text-terminal-cyan font-semibold mb-3">
+          Q&A Transcript (Excerpt)
+        </h4>
+        <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
+          {analysis.qaTranscript?.trim() || "Transcript unavailable for this quarter."}
         </div>
       </div>
     </div>

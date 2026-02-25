@@ -21,13 +21,14 @@ serve(async (req) => {
 
     const systemPrompt = `You are an institutional-grade earnings analyst. Analyze the earnings call for ${ticker} (${quarter}) using the 4-Pillar Analytical Framework.
 
-Return your analysis as a JSON object with exactly these 4 keys:
+Return your analysis as a JSON object with exactly these 5 keys:
 - "delta": What materially changed this quarter vs prior. Identify shifts in management tone, key driver changes, new risks. If nothing changed, say "No Material Change."
 - "stateOfPlay": Where is the company in its operational cycle? Classify as Stabilizing/Recovering/Scaling/Peaking. Distinguish leading from lagging indicators.
 - "signaling": What does management want the market to believe? Explicit guidance, implicit signaling, narrative drift from prior quarters.
 - "qaTruth": Q&A analysis - identify evasion (long answers to short questions), uncomfortable questions, credibility of specific vs generic answers.
+- "qaTranscript": A short Q&A transcript excerpt (6-10 lines) with speaker prefixes like "Analyst:" and "Management:" summarizing the most material exchange.
 
-Keep each section 3-5 sentences. Be specific, not generic. Use the company's actual business context.
+Keep each section 3-5 sentences (except qaTranscript line format). Be specific, not generic. Use the company's actual business context.
 Return ONLY the JSON object, no markdown wrapping.`;
 
     const response = await fetch(
@@ -44,7 +45,7 @@ Return ONLY the JSON object, no markdown wrapping.`;
             { role: "system", content: systemPrompt },
             {
               role: "user",
-              content: `Analyze ${ticker} ${quarter} earnings. Provide institutional-grade analysis based on publicly available information about this company's recent performance, guidance, and analyst interactions.`,
+              content: `Analyze ${ticker} ${quarter} earnings. Provide institutional-grade analysis based on publicly available information about this company's recent performance, guidance, and analyst interactions. Include a concise Q&A transcript excerpt with Analyst/Management lines.`,
             },
           ],
           stream: true,
