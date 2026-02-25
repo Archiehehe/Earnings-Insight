@@ -101,18 +101,23 @@ const Index = () => {
           {portfolioStocks.length > 0 && (
             <div className="border-t border-border pt-5">
               <h3 className="text-xs uppercase tracking-wider text-terminal-cyan mb-3 font-semibold">
-                Your Portfolio
+                Your Portfolio ({portfolioStocks.length})
               </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {portfolioStocks.map((s) => (
-                  <button
-                    key={s.ticker}
-                    onClick={() => handleSelectStock(s)}
-                    className="px-2.5 py-1.5 text-xs font-mono bg-secondary rounded hover:bg-muted text-primary transition-colors"
-                  >
-                    {s.ticker}
-                  </button>
-                ))}
+              <div className="max-h-40 overflow-y-auto rounded border border-border">
+                <table className="w-full text-xs">
+                  <tbody>
+                    {portfolioStocks.map((s) => (
+                      <tr
+                        key={s.ticker}
+                        onClick={() => handleSelectStock(s)}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+                      >
+                        <td className="px-2.5 py-1.5 font-mono font-bold text-primary">{s.ticker}</td>
+                        <td className="px-2.5 py-1.5 text-muted-foreground truncate max-w-[140px]">{s.name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
